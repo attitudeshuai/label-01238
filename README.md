@@ -83,7 +83,7 @@ docker-compose --env-file .env up --build -d
 ## 题目内容
 
 ### 项目简介
-商业购物管理系统是一个完整的电商解决方案，整合了 SSM（Spring+SpringMVC+MyBatis）、SpringBoot、SpringAI 技术栈，基于 MySQL 构建数据存储，前端采用 Vue3 + ElementUI Plus 实现现代化界面。
+帮我编写一个Java项目，项目为 商业购物管理系统 ，整合 SSM（Spring+SpringMVC+MyBatis）、SpringBoot、SpringAI，基于 MySQL 构建，前端采用 Vue+ElementUI。核心功能包括：商品管理、订单管理、用户管理、购物车、AI 智能客服（基于 SpringAI）、订单数据分析等，覆盖电商全流程管理。
 
 ### 核心功能
 1. **商品管理** - 商品的增删改查、分类管理、库存管理
@@ -112,3 +112,107 @@ docker-compose --env-file .env up --build -d
 ├── docker-compose.yml      # Docker编排配置
 └── README.md               # 项目说明
 ```
+
+## API 接口文档
+
+Base URL: `http://localhost:8238/api`
+
+### 认证相关
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| POST | `/auth/login` | 用户登录 | `{username, password}` |
+| POST | `/auth/register` | 用户注册 | `{username, password, nickname, email, phone}` |
+| GET | `/auth/info` | 获取当前用户信息 | Header: `Authorization: Bearer <token>` |
+
+### 商品管理
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| GET | `/product/list` | 获取上架商品列表 | - |
+| GET | `/product/all` | 获取所有商品(管理员) | - |
+| GET | `/product/detail/{id}` | 获取商品详情 | - |
+| GET | `/product/category/{categoryId}` | 按分类获取商品 | - |
+| GET | `/product/search` | 搜索商品 | `?keyword=xxx` |
+| GET | `/product/hot` | 获取热销商品 | `?limit=10` |
+| POST | `/product/add` | 新增商品 | `{name, categoryId, price, stock, image, description, status}` |
+| PUT | `/product/update` | 更新商品 | `{id, name, categoryId, price, stock, image, description, status}` |
+| DELETE | `/product/delete/{id}` | 删除商品 | - |
+
+### 分类管理
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| GET | `/category/list` | 获取分类列表 | - |
+| POST | `/category/add` | 新增分类 | `{name, description, sort, status}` |
+| PUT | `/category/update` | 更新分类 | `{id, name, description, sort, status}` |
+| DELETE | `/category/delete/{id}` | 删除分类 | - |
+
+### 购物车
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| GET | `/cart/list` | 获取购物车列表 | - |
+| POST | `/cart/add` | 添加到购物车 | `{productId, quantity}` |
+| PUT | `/cart/update/{id}` | 更新数量 | `{quantity}` |
+| PUT | `/cart/select/{id}` | 更新选中状态 | `{selected}` |
+| PUT | `/cart/selectAll` | 全选/取消全选 | `{selected}` |
+| DELETE | `/cart/delete/{id}` | 删除购物车项 | - |
+| DELETE | `/cart/clear` | 清空购物车 | - |
+
+### 订单管理
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| GET | `/order/list` | 获取当前用户订单 | - |
+| GET | `/order/all` | 获取所有订单(管理员) | - |
+| GET | `/order/detail/{id}` | 获取订单详情 | - |
+| POST | `/order/create` | 创建订单 | `{address, receiver, phone, remark}` |
+| PUT | `/order/status/{id}` | 更新订单状态 | `{status}` (0待支付/1已支付/2已发货/3已完成/4已取消) |
+| DELETE | `/order/delete/{id}` | 删除订单 | - |
+
+### 用户管理
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| GET | `/user/list` | 获取用户列表(管理员) | - |
+| GET | `/user/detail/{id}` | 获取用户详情 | - |
+| POST | `/user/add` | 新增用户 | `{username, password, nickname, email, phone}` |
+| PUT | `/user/update` | 更新用户 | `{id, nickname, email, phone, role}` |
+| PUT | `/user/status/{id}` | 更新用户状态 | `{status}` (0禁用/1启用) |
+| DELETE | `/user/delete/{id}` | 删除用户 | - |
+
+### 数据统计
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| GET | `/statistics/overview` | 获取概览数据 | - |
+| GET | `/statistics/orderStatus` | 订单状态统计 | - |
+| GET | `/statistics/recentOrders` | 近期订单统计 | `?days=7` |
+| GET | `/statistics/monthlySales` | 月度销售统计 | `?months=6` |
+| GET | `/statistics/hotProducts` | 热销商品排行 | `?limit=10` |
+
+### AI 客服
+
+| 方法 | 路径 | 说明 | 参数 |
+|------|------|------|------|
+| POST | `/ai/chat` | AI对话 | `{message}` |
+
+### 响应格式
+
+所有接口统一返回格式：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {}
+}
+```
+
+| code | 说明 |
+|------|------|
+| 200 | 成功 |
+| 400 | 参数错误 |
+| 401 | 未授权 |
+| 500 | 服务器错误 |
