@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop.mapper.CartMapper">
+    
+    <!-- 根据用户ID查询购物车 -->
+    <select id="findByUserId" resultType="Cart">
+        SELECT c.id, c.user_id, c.product_id, p.name as product_name, 
+               p.image as product_image, p.price, p.stock, c.quantity, c.selected, 
+               c.create_time, c.update_time
+        FROM cart c
+        LEFT JOIN product p ON c.product_id = p.id
+        WHERE c.user_id = #{userId}
+        ORDER BY c.create_time DESC
+    </select>
+    
+    <!-- 根据用户ID和商品ID查询购物车项 -->
+    <select id="findByUserIdAndProductId" resultType="Cart">
+        SELECT c.id, c.user_id, c.product_id, p.name as product_name, 
+               p.image as product_image, p.price, p.stock, c.quantity, c.selected, 
+               c.create_time, c.update_time
+        FROM cart c
+        LEFT JOIN product p ON c.product_id = p.id
+        WHERE c.user_id = #{userId} AND c.product_id = #{productId}
+    </select>
+    
+    <!-- 新增购物车项 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cart (user_id, product_id, quantity, selected, create_time, update_time)
+        VALUES (#{userId}, #{productId}, #{quantity}, #{selected}, NOW(), NOW())
+    </insert>
+    
+    <!-- 更新购物车项数量 -->
+    <update id="updateQuantity">
+        UPDATE cart SET quantity = #{quantity}, update_time = NOW() WHERE id = #{id}
+    </update>
+    
+    <!-- 更新选中状态 -->
+    <update id="updateSelected">
+        UPDATE cart SET selected = #{selected}, update_time = NOW() WHERE id = #{id}
+    </update>
+    
+    <!-- 全选/取消全选 -->
+    <update id="updateAllSelected">
+        UPDATE cart SET selected = #{selected}, update_time = NOW() WHERE user_id = #{userId}
+    </update>
+    
+    <!-- 删除购物车项 -->
+    <delete id="deleteById">
+        DELETE FROM cart WHERE id = #{id}
+    </delete>
+    
+    <!-- 清空用户购物车 -->
+    <delete id="deleteByUserId">
+        DELETE FROM cart WHERE user_id = #{userId}
+    </delete>
+    
+    <!-- 删除选中的购物车项 -->
+    <delete id="deleteSelected">
+        DELETE FROM cart WHERE user_id = #{userId} AND selected = true
+    </delete>
+</mapper>

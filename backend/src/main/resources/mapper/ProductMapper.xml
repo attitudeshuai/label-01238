@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop.mapper.ProductMapper">
+    
+    <!-- 查询所有商品 -->
+    <select id="findAll" resultType="Product">
+        SELECT p.id, p.name, p.description, p.price, p.stock, p.image, 
+               p.category_id, c.name as category_name, p.status, p.sales, 
+               p.create_time, p.update_time
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        ORDER BY p.create_time DESC
+    </select>
+    
+    <!-- 查询上架商品(前台展示) -->
+    <select id="findOnSale" resultType="Product">
+        SELECT p.id, p.name, p.description, p.price, p.stock, p.image, 
+               p.category_id, c.name as category_name, p.status, p.sales, 
+               p.create_time, p.update_time
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        WHERE p.status = 1
+        ORDER BY p.create_time DESC
+    </select>
+    
+    <!-- 根据ID查询商品 -->
+    <select id="findById" resultType="Product">
+        SELECT p.id, p.name, p.description, p.price, p.stock, p.image, 
+               p.category_id, c.name as category_name, p.status, p.sales, 
+               p.create_time, p.update_time
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        WHERE p.id = #{id}
+    </select>
+    
+    <!-- 根据分类ID查询商品 -->
+    <select id="findByCategoryId" resultType="Product">
+        SELECT p.id, p.name, p.description, p.price, p.stock, p.image, 
+               p.category_id, c.name as category_name, p.status, p.sales, 
+               p.create_time, p.update_time
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        WHERE p.category_id = #{categoryId} AND p.status = 1
+        ORDER BY p.create_time DESC
+    </select>
+    
+    <!-- 搜索商品 -->
+    <select id="search" resultType="Product">
+        SELECT p.id, p.name, p.description, p.price, p.stock, p.image, 
+               p.category_id, c.name as category_name, p.status, p.sales, 
+               p.create_time, p.update_time
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        WHERE p.status = 1 AND (p.name LIKE CONCAT('%', #{keyword}, '%') 
+              OR p.description LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY p.sales DESC
+    </select>
+    
+    <!-- 新增商品 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product (name, description, price, stock, image, category_id, status, sales, create_time, update_time)
+        VALUES (#{name}, #{description}, #{price}, #{stock}, #{image}, #{categoryId}, #{status}, 0, NOW(), NOW())
+    </insert>
+    
+    <!-- 更新商品 -->
+    <update id="update">
+        UPDATE product
+        SET name = #{name}, description = #{description}, price = #{price}, 
+            stock = #{stock}, image = #{image}, category_id = #{categoryId}, 
+            status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除商品 -->
+    <delete id="deleteById">
+        DELETE FROM product WHERE id = #{id}
+    </delete>
+    
+    <!-- 更新库存 -->
+    <update id="updateStock">
+        UPDATE product SET stock = stock - #{quantity}, update_time = NOW() WHERE id = #{id}
+    </update>
+    
+    <!-- 更新销量 -->
+    <update id="updateSales">
+        UPDATE product SET sales = sales + #{quantity}, update_time = NOW() WHERE id = #{id}
+    </update>
+    
+    <!-- 统计商品总数 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM product
+    </select>
+    
+    <!-- 查询热销商品(从订单项统计真实销售额) -->
+    <select id="findHotProducts" resultType="map">
+        SELECT p.id, p.name, p.description, p.price, p.stock, p.image, 
+               p.category_id as categoryId, c.name as categoryName, p.status, 
+               p.sales as salesCount, 
+               COALESCE((SELECT SUM(oi.subtotal) FROM order_item oi 
+                         JOIN `order` o ON oi.order_id = o.id 
+                         WHERE oi.product_id = p.id AND o.status >= 1 AND o.status != 4), 0) as salesAmount,
+               p.create_time as createTime, p.update_time as updateTime
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.id
+        WHERE p.status = 1
+        ORDER BY p.sales DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

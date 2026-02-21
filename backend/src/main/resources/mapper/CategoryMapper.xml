@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop.mapper.CategoryMapper">
+    
+    <!-- 查询所有分类 -->
+    <select id="findAll" resultType="Category">
+        SELECT id, name, description, sort, status, create_time, update_time
+        FROM category
+        ORDER BY sort ASC
+    </select>
+    
+    <!-- 根据ID查询分类 -->
+    <select id="findById" resultType="Category">
+        SELECT id, name, description, sort, status, create_time, update_time
+        FROM category
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 新增分类 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO category (name, description, sort, status, create_time, update_time)
+        VALUES (#{name}, #{description}, #{sort}, #{status}, NOW(), NOW())
+    </insert>
+    
+    <!-- 更新分类 -->
+    <update id="update">
+        UPDATE category
+        SET name = #{name}, description = #{description}, sort = #{sort}, 
+            status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除分类 -->
+    <delete id="deleteById">
+        DELETE FROM category WHERE id = #{id}
+    </delete>
+</mapper>

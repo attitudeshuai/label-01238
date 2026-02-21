@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop.mapper.OrderMapper">
+    
+    <!-- 查询所有订单 -->
+    <select id="findAll" resultType="Order">
+        SELECT o.id, o.order_no, o.user_id, u.username, o.total_amount, o.status, 
+               o.address, o.receiver, o.phone, o.remark, o.pay_time, o.ship_time, 
+               o.finish_time, o.create_time, o.update_time
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        ORDER BY o.create_time DESC
+    </select>
+    
+    <!-- 根据ID查询订单 -->
+    <select id="findById" resultType="Order">
+        SELECT o.id, o.order_no, o.user_id, u.username, o.total_amount, o.status, 
+               o.address, o.receiver, o.phone, o.remark, o.pay_time, o.ship_time, 
+               o.finish_time, o.create_time, o.update_time
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        WHERE o.id = #{id}
+    </select>
+    
+    <!-- 根据订单号查询订单 -->
+    <select id="findByOrderNo" resultType="Order">
+        SELECT o.id, o.order_no, o.user_id, u.username, o.total_amount, o.status, 
+               o.address, o.receiver, o.phone, o.remark, o.pay_time, o.ship_time, 
+               o.finish_time, o.create_time, o.update_time
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        WHERE o.order_no = #{orderNo}
+    </select>
+    
+    <!-- 根据用户ID查询订单 -->
+    <select id="findByUserId" resultType="Order">
+        SELECT o.id, o.order_no, o.user_id, u.username, o.total_amount, o.status, 
+               o.address, o.receiver, o.phone, o.remark, o.pay_time, o.ship_time, 
+               o.finish_time, o.create_time, o.update_time
+        FROM `order` o
+        LEFT JOIN user u ON o.user_id = u.id
+        WHERE o.user_id = #{userId}
+        ORDER BY o.create_time DESC
+    </select>
+    
+    <!-- 新增订单 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `order` (order_no, user_id, total_amount, status, address, receiver, phone, remark, create_time, update_time)
+        VALUES (#{orderNo}, #{userId}, #{totalAmount}, #{status}, #{address}, #{receiver}, #{phone}, #{remark}, NOW(), NOW())
+    </insert>
+    
+    <!-- 新增订单项 -->
+    <insert id="insertOrderItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO order_item (order_id, product_id, product_name, product_image, price, quantity, subtotal)
+        VALUES (#{orderId}, #{productId}, #{productName}, #{productImage}, #{price}, #{quantity}, #{subtotal})
+    </insert>
+    
+    <!-- 批量新增订单项 -->
+    <insert id="batchInsertOrderItems">
+        INSERT INTO order_item (order_id, product_id, product_name, product_image, price, quantity, subtotal)
+        VALUES
+        <foreach collection="items" item="item" separator=",">
+            (#{item.orderId}, #{item.productId}, #{item.productName}, #{item.productImage}, #{item.price}, #{item.quantity}, #{item.subtotal})
+        </foreach>
+    </insert>
+    
+    <!-- 更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE `order` 
+        SET status = #{status}, 
+            pay_time = CASE WHEN #{status} = 1 THEN NOW() ELSE pay_time END,
+            ship_time = CASE WHEN #{status} = 2 THEN NOW() ELSE ship_time END,
+            finish_time = CASE WHEN #{status} = 3 THEN NOW() ELSE finish_time END,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除订单 -->
+    <delete id="deleteById">
+        DELETE FROM `order` WHERE id = #{id}
+    </delete>
+    
+    <!-- 查询订单项 -->
+    <select id="findOrderItems" resultType="OrderItem">
+        SELECT id, order_id, product_id, product_name, product_image, price, quantity, subtotal
+        FROM order_item
+        WHERE order_id = #{orderId}
+    </select>
+    
+    <!-- 统计订单总数 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM `order`
+    </select>
+    
+    <!-- 统计各状态订单数量 -->
+    <select id="countByStatus" resultType="map">
+        SELECT status, COUNT(*) as count FROM `order` GROUP BY status
+    </select>
+    
+    <!-- 统计销售额 -->
+    <select id="sumTotalAmount" resultType="map">
+        SELECT COALESCE(SUM(CASE WHEN status >= 1 AND status != 4 THEN total_amount ELSE 0 END), 0) as paid,
+               COALESCE(SUM(CASE WHEN status = 0 THEN total_amount ELSE 0 END), 0) as pending
+        FROM `order`
+    </select>
+    
+    <!-- 按日期统计订单 -->
+    <select id="countByDate" resultType="map">
+        SELECT DATE(create_time) as date, COUNT(*) as count, COALESCE(SUM(total_amount), 0) as amount
+        FROM `order`
+        WHERE create_time >= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE(create_time)
+        ORDER BY date
+    </select>
+    
+    <!-- 按月统计销售额(只统计已支付订单) -->
+    <select id="sumAmountByMonth" resultType="map">
+        SELECT DATE_FORMAT(create_time, '%Y-%m') as month, 
+               COUNT(*) as count, 
+               COALESCE(SUM(CASE WHEN status >= 1 AND status != 4 THEN total_amount ELSE 0 END), 0) as amount
+        FROM `order`
+        WHERE create_time >= DATE_SUB(CURDATE(), INTERVAL #{months} MONTH)
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m')
+        ORDER BY month
+    </select>
+</mapper>

@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+      data-locations: classpath:data-test.sql
+  ai:
+    openai:
+      api-key: test-key
+      base-url: http://localhost:8080
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.shop.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: test-secret-key-for-unit-testing-purposes-only-12345
+  expiration: 86400000
