@@ -182,9 +182,9 @@ const paymentAmount = ref(0)
 const currentOrderId = ref(null)
 
 const paymentMethods = [
-  { id: 'alipay', name: '支付宝', desc: '推荐使用', color: '#1677FF', icon: '<svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M19.5 3h-15A1.5 1.5 0 003 4.5v15A1.5 1.5 0 004.5 21h15a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0019.5 3z"/></svg>' },
-  { id: 'wechat', name: '微信支付', desc: '微信扫码支付', color: '#07C160', icon: '<svg viewBox="0 0 24 24" fill="white" width="24" height="24"><circle cx="12" cy="12" r="8"/></svg>' },
-  { id: 'card', name: '银行卡', desc: '储蓄卡/信用卡', color: '#FF6B35', icon: '<svg viewBox="0 0 24 24" fill="white" width="24" height="24"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>' }
+  { id: 'alipay', name: '支付宝', desc: '推荐使用', color: '#1677FF', icon: '<svg viewBox="0 0 24 24" fill="none" width="24" height="24"><circle cx="12" cy="12" r="10" fill="white"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold" fill="#1677FF">支</text></svg>' },
+  { id: 'wechat', name: '微信支付', desc: '微信扫码支付', color: '#07C160', icon: '<svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M9.5 8.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm5 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/><path d="M12 3c-4.97 0-9 3.58-9 8 0 2.4 1.2 4.55 3.08 6.04L5 20l3.5-1.8c1.1.3 2.27.47 3.5.47 4.97 0 9-3.58 9-8s-4.03-8-9-8z"/></svg>' },
+  { id: 'card', name: '银行卡', desc: '储蓄卡/信用卡', color: '#FF6B35', icon: '<svg viewBox="0 0 24 24" fill="white" width="24" height="24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="3" y="9" width="18" height="3" fill="#FF6B35" opacity="0.5"/></svg>' }
 ]
 
 const fetchOrders = async () => {
@@ -431,12 +431,39 @@ onMounted(fetchOrders)
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.method-info { flex: 1; }
-.method-name { display: block; font-weight: 600; }
-.method-desc { font-size: 0.8125rem; color: var(--color-medium-gray); }
-.method-check { width: 24px; height: 24px; color: var(--color-primary); }
+.method-icon span {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.method-icon span svg {
+  width: 24px;
+  height: 24px;
+}
+
+.method-info { 
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.method-name { display: block; font-weight: 600; line-height: 1.4; }
+.method-desc { font-size: 0.8125rem; color: var(--color-medium-gray); line-height: 1.4; }
+.method-check { 
+  width: 24px; 
+  height: 24px; 
+  color: var(--color-primary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .method-check svg { width: 100%; height: 100%; }
 
 .payment-processing { text-align: center; padding: var(--space-2xl); }
