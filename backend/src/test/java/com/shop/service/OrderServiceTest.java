@@ -520,4 +520,119 @@ class OrderServiceTest {
         assertNotNull(result);
         assertNull(result.getRemark());
     }
+
+    @Test
+    @DisplayName("从购物车创建订单 - 3件商品选2件漏1件")
+    void createFromCart_ThreeItemsTwoSelected() {
+        Cart cart1 = new Cart();
+        cart1.setId(1L);
+        cart1.setUserId(1L);
+        cart1.setProductId(1L);
+        cart1.setProductName("iPhone 15");
+        cart1.setPrice(new BigDecimal("6999.00"));
+        cart1.setQuantity(1);
+        cart1.setSelected(true);
+
+        Cart cart2 = new Cart();
+        cart2.setId(2L);
+        cart2.setUserId(1L);
+        cart2.setProductId(2L);
+        cart2.setProductName("MacBook Pro");
+        cart2.setPrice(new BigDecimal("12999.00"));
+        cart2.setQuantity(1);
+        cart2.setSelected(true);
+
+        Cart cart3 = new Cart();
+        cart3.setId(3L);
+        cart3.setUserId(1L);
+        cart3.setProductId(3L);
+        cart3.setProductName("AirPods Pro");
+        cart3.setPrice(new BigDecimal("799.00"));
+        cart3.setQuantity(1);
+        cart3.setSelected(false);
+
+        Product product1 = new Product();
+        product1.setId(1L);
+        product1.setName("iPhone 15");
+        product1.setPrice(new BigDecimal("6999.00"));
+        product1.setStock(100);
+
+        Product product2 = new Product();
+        product2.setId(2L);
+        product2.setName("MacBook Pro");
+        product2.setPrice(new BigDecimal("12999.00"));
+        product2.setStock(50);
+
+        Product product3 = new Product();
+        product3.setId(3L);
+        product3.setName("AirPods Pro");
+        product3.setPrice(new BigDecimal("799.00"));
+        product3.setStock(200);
+
+        List<Cart> carts = Arrays.asList(cart1, cart2, cart3);
+        when(cartMapper.findByUserId(1L)).thenReturn(carts);
+        when(productMapper.findById(1L)).thenReturn(product1);
+        when(productMapper.findById(2L)).thenReturn(product2);
+        when(orderMapper.insert(any(Order.class))).thenReturn(1);
+        when(orderMapper.insertOrderItem(any(OrderItem.class))).thenReturn(1);
+        when(productMapper.updateStock(anyLong(), anyInt())).thenReturn(1);
+        when(productMapper.updateSales(anyLong(), anyInt())).thenReturn(1);
+        when(cartMapper.deleteSelected(1L)).thenReturn(2);
+
+        Order result = orderService.createFromCart(1L, "测试地址", "张三", "13800138000", "备注");
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("19998.00"), result.getTotalAmount());
+        verify(productMapper, times(2)).updateStock(anyLong(), anyInt());
+        verify(productMapper).updateStock(1L, 1);
+        verify(productMapper).updateStock(2L, 1);
+        verify(productMapper, never()).updateStock(3L, 1);
+        verify(productMapper, times(2)).updateSales(anyLong(), anyInt());
+        verify(productMapper, never()).updateSales(3L, 1);
+        verify(cartMapper).deleteSelected(1L);
+        verify(orderMapper, times(2)).insertOrderItem(any(OrderItem.class));
+    }
+
+    @Test
+    @DisplayName("从购物车创建订单 - 全部商品未选中")
+    void createFromCart_AllItemsUnselected() {
+        Cart cart1 = new Cart();
+        cart1.setId(1L);
+        cart1.setUserId(1L);
+        cart1.setProductId(1L);
+        cart1.setProductName("iPhone 15");
+        cart1.setPrice(new BigDecimal("6999.00"));
+        cart1.setQuantity(1);
+        cart1.setSelected(false);
+
+        Cart cart2 = new Cart();
+        cart2.setId(2L);
+        cart2.setUserId(1L);
+        cart2.setProductId(2L);
+        cart2.setProductName("MacBook Pro");
+        cart2.setPrice(new BigDecimal("12999.00"));
+        cart2.setQuantity(1);
+        cart2.setSelected(false);
+
+        Cart cart3 = new Cart();
+        cart3.setId(3L);
+        cart3.setUserId(1L);
+        cart3.setProductId(3L);
+        cart3.setProductName("AirPods Pro");
+        cart3.setPrice(new BigDecimal("799.00"));
+        cart3.setQuantity(1);
+        cart3.setSelected(false);
+
+        List<Cart> carts = Arrays.asList(cart1, cart2, cart3);
+        when(cartMapper.findByUserId(1L)).thenReturn(carts);
+
+        Order result = orderService.createFromCart(1L, "测试地址", "张三", "13800138000", "备注");
+
+        assertNull(result);
+        verify(productMapper, never()).updateStock(anyLong(), anyInt());
+        verify(productMapper, never()).updateSales(anyLong(), anyInt());
+        verify(orderMapper, never()).insert(any(Order.class));
+        verify(orderMapper, never()).insertOrderItem(any(OrderItem.class));
+        verify(cartMapper, never()).deleteSelected(1L);
+    }
 }
