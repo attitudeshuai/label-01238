@@ -16,12 +16,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.UUID;
 
-/**
- * 订单服务类
- */
 @Service
 public class OrderService {
 
@@ -34,154 +30,70 @@ public class OrderService {
     @Autowired
     private ProductMapper productMapper;
 
-    /**
-     * 查询所有订单
-     */
-    public List<Order> findAll() {
-        List<Order> orders = orderMapper.findAll();
-        for (Order order : orders) {
-            order.setItems(orderMapper.findOrderItems(order.getId()));
-        }
-        return orders;
-    }
-
-    /**
-     * 根据ID查询订单
-     */
-    public Order findById(Long id) {
-        Order order = orderMapper.findById(id);
-        if (order != null) {
-            order.setItems(orderMapper.findOrderItems(id));
-        }
-        return order;
-    }
-
-    /**
-     * 根据用户ID查询订单
-     */
-    public List<Order> findByUserId(Long userId) {
-        List<Order> orders = orderMapper.findByUserId(userId);
-        for (Order order : orders) {
-            order.setItems(orderMapper.findOrderItems(order.getId()));
-        }
-        return orders;
-    }
-
-    /**
-     * 创建订单(从购物车)
-     */
     @Transactional
     public Order createFromCart(Long userId, String address, String receiver, String phone, String remark) {
-        // 获取选中的购物车项
-        List<Cart> cartList = cartMapper.findByUserId(userId);
-        List<Cart> selectedCarts = cartList.stream().filter(Cart::getSelected).toList();
+        List<Cart> carts = cartMapper.findByUserId(userId);
+        
+        List<Cart> selectedCarts = new ArrayList<>();
+        for (Cart cart : carts) {
+            if (cart.getSelected() != null && cart.getSelected()) {
+                selectedCarts.add(cart);
+            }
+        }
+        
         if (selectedCarts.isEmpty()) {
             return null;
         }
-
-        // 计算总金额
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        List<OrderItem> items = new ArrayList<>();
-        for (Cart cart : selectedCarts) {
-            Product product = productMapper.findById(cart.getProductId());
-            if (product == null || product.getStock() < cart.getQuantity()) {
-                throw new RuntimeException("商品库存不足: " + cart.getProductName());
-            }
-            BigDecimal subtotal = cart.getPrice().multiply(BigDecimal.valueOf(cart.getQuantity()));
-            totalAmount = totalAmount.add(subtotal);
-
-            OrderItem item = new OrderItem();
-            item.setProductId(cart.getProductId());
-            item.setProductName(cart.getProductName());
-            item.setProductImage(cart.getProductImage());
-            item.setPrice(cart.getPrice());
-            item.setQuantity(cart.getQuantity());
-            item.setSubtotal(subtotal);
-            items.add(item);
-        }
-
-        // 创建订单
+        
         Order order = new Order();
-        order.setOrderNo(generateOrderNo());
         order.setUserId(userId);
-        order.setTotalAmount(totalAmount);
-        order.setStatus(0);
         order.setAddress(address);
         order.setReceiver(receiver);
         order.setPhone(phone);
         order.setRemark(remark);
-        orderMapper.insert(order);
-
-        // 创建订单项并更新库存
-        for (OrderItem item : items) {
-            item.setOrderId(order.getId());
-            orderMapper.insertOrderItem(item);
-            productMapper.updateStock(item.getProductId(), item.getQuantity());
-            productMapper.updateSales(item.getProductId(), item.getQuantity());
+        order.setStatus(0);
+        
+        String orderNo = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) 
+            + String.format("%04d", (int)(Math.random() * 10000));
+        order.setOrderNo(orderNo);
+        
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<OrderItem> orderItems = new ArrayList<>();
+        
+        for (Cart cart : selectedCarts) {
+            Product product = productMapper.findById(cart.getProductId());
+            if (product == null) {
+                continue;
+            }
+            
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProductId(cart.getProductId());
+            orderItem.setProductName(cart.getProductName());
+            orderItem.setProductImage(cart.getProductImage());
+            orderItem.setPrice(cart.getPrice());
+            orderItem.setQuantity(cart.getQuantity());
+            BigDecimal subtotal = cart.getPrice().multiply(new BigDecimal(cart.getQuantity()));
+            orderItem.setSubtotal(subtotal);
+            orderItems.add(orderItem);
+            
+            totalAmount = totalAmount.add(subtotal);
+            
+            productMapper.updateStock(cart.getProductId(), cart.getQuantity());
+            productMapper.updateSales(cart.getProductId(), cart.getQuantity());
         }
-
-        // 删除已购买的购物车项
+        
+        order.setTotalAmount(totalAmount);
+        order.setItems(orderItems);
+        
+        orderMapper.insert(order);
+        
+        for (OrderItem orderItem : orderItems) {
+            orderItem.setOrderId(order.getId());
+            orderMapper.insertOrderItem(orderItem);
+        }
+        
         cartMapper.deleteSelected(userId);
-
-        order.setItems(items);
+        
         return order;
-    }
-
-    /**
-     * 更新订单状态
-     */
-    public boolean updateStatus(Long id, Integer status) {
-        return orderMapper.updateStatus(id, status) > 0;
-    }
-
-    /**
-     * 删除订单
-     */
-    public boolean delete(Long id) {
-        return orderMapper.deleteById(id) > 0;
-    }
-
-    /**
-     * 统计订单总数
-     */
-    public int count() {
-        return orderMapper.count();
-    }
-
-    /**
-     * 统计各状态订单数量
-     */
-    public List<Map<String, Object>> countByStatus() {
-        return orderMapper.countByStatus();
-    }
-
-    /**
-     * 统计销售额
-     */
-    public Map<String, Object> sumTotalAmount() {
-        return orderMapper.sumTotalAmount();
-    }
-
-    /**
-     * 按日期统计订单
-     */
-    public List<Map<String, Object>> countByDate(Integer days) {
-        return orderMapper.countByDate(days);
-    }
-
-    /**
-     * 按月统计销售额
-     */
-    public List<Map<String, Object>> sumAmountByMonth(Integer months) {
-        return orderMapper.sumAmountByMonth(months);
-    }
-
-    /**
-     * 生成订单号
-     */
-    private String generateOrderNo() {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String random = String.format("%04d", new Random().nextInt(10000));
-        return timestamp + random;
     }
 }
